@@ -1,4 +1,51 @@
+# ── Python ─────────────────────────────────────────────────────────
 __pycache__/
-.env
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── Virtual environments ───────────────────────────────────────────
 .venv/
-*.pyc
+venv/
+env/
+ENV/
+
+# ── Environment & secrets (NEVER commit) ──────────────────────────
+.env
+*.env.*
+!.env.example
+
+# ── IDE & editor ──────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# ── Pytest / testing ──────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.log
+
+# ── Docker ────────────────────────────────────────────────────────
+*.dockerignore
+
+# ── Jupyter / notebooks ───────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Uploads (runtime artefacts, not source) ───────────────────────
+uploads/
+temp/

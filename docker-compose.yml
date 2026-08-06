@@ -1,0 +1,79 @@
+services:
+
+  # ── MySQL Database ───────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: meeting_assistant_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - meeting_network
+
+  # ── FastAPI Backend ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meeting_assistant_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: db
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    networks:
+      - meeting_network
+
+  # ── Streamlit Frontend ───────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: meeting_assistant_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+    networks:
+      - meeting_network
+
+# ── Volumes ─────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+# ── Networks ─────────────────────────────────────────────────────
+networks:
+  meeting_network:
+    driver: bridge

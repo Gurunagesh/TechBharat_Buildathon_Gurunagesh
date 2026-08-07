@@ -1,0 +1,13 @@
+Host: Let's do a quick sync on the current issues.
+
+Participant: The billing system crashed again. Someone needs to investigate this as soon as possible.
+
+Host: Yes, that is critical. We also need to send the Q2 financial report eventually, maybe sometime next month.
+
+Participant: I think we should also think about updating the landing page design.
+
+Host: Who wants to take that? No one? Okay, we'll assign it later.
+
+Participant: Also, we should probably do a security review before the audit.
+
+Host: Let's do that when we have time. Okay, that's all for today.

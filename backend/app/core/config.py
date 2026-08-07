@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     enable_github: bool = Field(default=True)
 
     # ── Application ───────────────────────────────────────────────
+    mock_llm: bool = Field(default=True, description="Enable mock LLM responses for demo/buildathon stability")
     confidence_threshold: float = Field(default=0.70, ge=0.0, le=1.0)
     max_upload_size_mb: int = Field(default=10)
     allowed_extensions: str = Field(default=".txt,.vtt,.srt")

@@ -96,6 +96,15 @@ class Meeting(Base):
         "AuditLog", back_populates="meeting", cascade="all, delete-orphan"
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if "meeting_id" not in kwargs:
+            self.meeting_id = _new_uuid()
+        if "title" not in kwargs:
+            self.title = "Untitled Meeting"
+        if "processing_status" not in kwargs:
+            self.processing_status = ProcessingStatus.UPLOADING
+
     def __repr__(self) -> str:
         return f"<Meeting id={self.meeting_id[:8]} status={self.processing_status}>"
 
@@ -182,6 +191,19 @@ class ActionItem(Base):
     audit_logs: Mapped[List["AuditLog"]] = relationship(
         "AuditLog", back_populates="action_item"
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if "action_item_id" not in kwargs:
+            self.action_item_id = _new_uuid()
+        if "owner" not in kwargs:
+            self.owner = "UNASSIGNED"
+        if "priority" not in kwargs:
+            self.priority = Priority.MEDIUM
+        if "confidence_score" not in kwargs:
+            self.confidence_score = 0.0
+        if "status" not in kwargs:
+            self.status = ActionStatus.PENDING_REVIEW
 
     def __repr__(self) -> str:
         return f"<ActionItem id={self.action_item_id[:8]} status={self.status} owner={self.owner}>"

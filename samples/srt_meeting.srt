@@ -1,0 +1,47 @@
+1
+00:00:01,000 --> 00:00:04,500
+Kavitha: Let's review the bug triage from this week.
+
+2
+00:00:05,000 --> 00:00:09,200
+Naveen: We have 14 open P1 bugs. Three are related to the payment module.
+
+3
+00:00:09,500 --> 00:00:14,000
+Kavitha: Naveen, can you fix the payment timeout bug by tomorrow? That's blocking the release.
+
+4
+00:00:14,200 --> 00:00:18,800
+Naveen: Yes. I already have a fix locally. I'll push the PR today and it should be merged by tomorrow morning.
+
+5
+00:00:19,000 --> 00:00:23,500
+Kavitha: Good. What about the data export issue that the enterprise client reported?
+
+6
+00:00:24,000 --> 00:00:28,300
+Ritu: I'm investigating that. The CSV export is truncating rows beyond 10,000. I'll have a root cause analysis by Wednesday.
+
+7
+00:00:28,500 --> 00:00:32,000
+Kavitha: That's high priority. Ritu, loop in DevOps if it turns out to be a memory issue.
+
+8
+00:00:32,500 --> 00:00:37,000
+Naveen: One more thing — the login rate limiter is too aggressive. We're getting complaints from legitimate users.
+
+9
+00:00:37,200 --> 00:00:41,500
+Kavitha: Let's increase the threshold from 5 to 10 attempts per minute. Naveen, update the config by end of day.
+
+10
+00:00:42,000 --> 00:00:46,000
+Ritu: Should we add monitoring alerts for rate limiting events?
+
+11
+00:00:46,500 --> 00:00:50,000
+Kavitha: Absolutely. Ritu, set up Datadog alerts for rate limit triggers by Friday.
+
+12
+00:00:50,500 --> 00:00:54,000
+Kavitha: Alright, that covers the critical items. Let's sync again on Thursday.

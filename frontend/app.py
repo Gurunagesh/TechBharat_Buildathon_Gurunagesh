@@ -1,23 +1,25 @@
 """
 frontend/app.py
 ───────────────
-Streamlit application entrypoint.
+Main Streamlit Application Entrypoint.
 
-Navigation:
-    Sidebar → Dashboard (list of meetings)
-    Sidebar → Meeting View → Tabs:
-        📋 Summary      (decisions, risks, open questions)
-        ✅ Action Items  (edit / approve / reject / evidence drawer)
-        🐙 GitHub       (sync button + issue URLs)
-        📜 Audit Trail  (timeline table)
-
-Pages are built Sprint by Sprint.
-This file is the skeleton that verifies Streamlit starts correctly.
+Routing Priority (highest to lowest):
+  1. selected_meeting_id is set → always show Single Meeting Workspace
+  2. sidebar radio == Upload Transcript → show Upload Page
+  3. default → show Meeting Dashboard (list)
 """
 
 import streamlit as st
-import os
-import requests
+from utils.api_client import APIClient
+from utils.ui_state import UIState
+from components.sidebar import render_sidebar
+from components.summary_card import render_summary_card
+from components.action_table import render_action_items_tab
+from components.sync_panel import render_github_sync_tab
+from components.audit_table import render_audit_trail_tab
+from components.status_badges import render_processing_status_badge
+from components.dev_mode import render_developer_mode_panel
+from views.upload_page import render_upload_page
 
 # ── Page Config ───────────────────────────────────────────────────
 st.set_page_config(
@@ -27,84 +29,100 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Backend URL ───────────────────────────────────────────────────
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+# ── Initialize Session State ──────────────────────────────────────
+UIState.init()
 
+# ── Render Sidebar (returns radio selection) ──────────────────────
+selected_page = render_sidebar()
 
-def check_backend_health() -> dict:
-    """Ping the FastAPI health endpoint."""
-    try:
-        response = requests.get(f"{BACKEND_URL}/api/health", timeout=5)
-        return response.json()
-    except Exception:
-        return {"status": "unreachable"}
+# ── Routing ───────────────────────────────────────────────────────
+# Read selected_id FIRST — upload sets this, and it takes precedence
+# over whatever the sidebar radio currently shows.
+selected_id = UIState.get_selected_meeting_id()
 
+# ── ROUTE 1: Single Meeting Workspace ────────────────────────────
+if selected_id:
+    meeting_data = APIClient.get_meeting_detail(selected_id)
 
-# ── Sidebar ───────────────────────────────────────────────────────
-with st.sidebar:
-    st.title("🤖 AI Meeting Assistant")
-    st.caption("TechBharat Buildathon — Use Case B")
-    st.divider()
+    if not meeting_data:
+        st.error("⚠️ Meeting not found or was deleted.")
+        if st.button("← Back to Dashboard"):
+            UIState.set_selected_meeting_id(None)
+            st.rerun()
 
-    # Navigation
-    page = st.radio(
-        "Navigate",
-        options=["🏠 Dashboard", "📂 Upload Meeting"],
-        label_visibility="collapsed",
-    )
-
-    st.divider()
-
-    # System status
-    st.subheader("System Status")
-    health = check_backend_health()
-    status = health.get("status", "unreachable")
-
-    if status == "healthy":
-        st.success("✅ Backend: Online")
-    elif status == "degraded":
-        st.warning("⚠️ Backend: Degraded")
     else:
-        st.error("❌ Backend: Offline")
+        # Header Bar
+        col_back, col_title, col_status = st.columns([1, 4, 2])
+        with col_back:
+            if st.button("← Dashboard", key="btn_back_dashboard"):
+                UIState.set_selected_meeting_id(None)
+                st.rerun()
+        with col_title:
+            st.title(f"📄 {meeting_data.get('title', 'Meeting')}")
+            st.caption(
+                f"Meeting Date: `{meeting_data.get('meeting_date')}` | "
+                f"Uploaded: `{meeting_data.get('uploaded_at')}`"
+            )
+        with col_status:
+            render_processing_status_badge(meeting_data.get("processing_status", "UNKNOWN"))
 
-    if health.get("database") == "connected":
-        st.success("✅ Database: Connected")
-    else:
-        st.error("❌ Database: Disconnected")
+        st.divider()
 
-    if health.get("gemini_configured"):
-        st.success("✅ Gemini: Configured")
-    else:
-        st.warning("⚠️ Gemini: Not configured")
+        # Workspace Tabs
+        tab_summary, tab_actions, tab_github, tab_audit = st.tabs([
+            "📝 Executive Summary",
+            "✅ Human Review Action Items",
+            "🐙 GitHub Sync",
+            "📜 Audit Trail",
+        ])
 
-    if health.get("github_configured"):
-        st.success("✅ GitHub: Configured")
-    else:
-        st.warning("⚠️ GitHub: Not configured")
+        with tab_summary:
+            render_summary_card(meeting_data)
 
+        with tab_actions:
+            render_action_items_tab(selected_id)
 
-# ── Main Content ──────────────────────────────────────────────────
-if page == "🏠 Dashboard":
+        with tab_github:
+            render_github_sync_tab(selected_id)
+
+        with tab_audit:
+            render_audit_trail_tab(selected_id)
+
+        # Developer Mode Observability Panel
+        render_developer_mode_panel(meeting_data)
+
+# ── ROUTE 2: Upload Transcript Page ──────────────────────────────
+elif selected_page == "📂 Upload Transcript":
+    render_upload_page()
+
+# ── ROUTE 3: Dashboard (Meeting List) ────────────────────────────
+else:
     st.title("🏠 Meeting Dashboard")
-    st.info(
-        "**Sprint 0 Checkpoint** — Streamlit is running successfully. "
-        "Meeting list will be populated in Sprint 5."
-    )
-    st.markdown("### Recent Meetings")
-    st.caption("No meetings yet. Upload a transcript to get started.")
+    st.caption("Select a meeting from the list below or upload a new transcript.")
 
-elif page == "📂 Upload Meeting":
-    st.title("📂 Upload Meeting Transcript")
-    st.info(
-        "**Sprint 0 Checkpoint** — Upload functionality will be implemented in Sprint 5. "
-        "The backend upload endpoint will be wired here."
-    )
-    st.markdown("#### Supported formats: `.txt`, `.vtt`, `.srt`")
-    uploaded_file = st.file_uploader(
-        "Choose a transcript file",
-        type=["txt", "vtt", "srt"],
-        help="Upload a meeting transcript in .txt, .vtt, or .srt format",
-    )
-    if uploaded_file:
-        st.success(f"File selected: `{uploaded_file.name}` ({uploaded_file.size} bytes)")
-        st.caption("Upload processing will be connected in Sprint 5.")
+    meetings = APIClient.list_meetings()
+
+    if meetings:
+        st.markdown("### 📋 Ingested Meetings")
+        for m in meetings:
+            with st.container(border=True):
+                c_title, c_status, c_actions, c_btn = st.columns([3, 2, 1.5, 1])
+                with c_title:
+                    st.markdown(f"#### 📄 {m.get('title', 'Untitled')}")
+                    st.caption(f"Uploaded: `{m.get('uploaded_at')}`")
+                with c_status:
+                    render_processing_status_badge(m.get("processing_status", "UNKNOWN"))
+                with c_actions:
+                    st.markdown(f"📌 **{m.get('action_items_count', 0)}** action items")
+                with c_btn:
+                    if st.button("Open", key=f"open_m_{m['meeting_id']}", type="primary"):
+                        UIState.set_selected_meeting_id(m["meeting_id"])
+                        st.rerun()
+    else:
+        st.info("No meetings found. Upload a transcript to get started.")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("📂 Upload Transcript Now", type="primary", use_container_width=True):
+                # Signal the sidebar to show the upload page on next rerun
+                st.session_state["_force_upload_page"] = True
+                st.rerun()

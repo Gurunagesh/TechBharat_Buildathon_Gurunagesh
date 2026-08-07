@@ -1,0 +1,43 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.500
+<v Deepika>Welcome to the product roadmap review. Let's start with Q3 priorities.
+
+00:00:05.000 --> 00:00:09.200
+<v Arjun>I've completed the competitive analysis. Our main gap is real-time collaboration features.
+
+00:00:09.500 --> 00:00:14.000
+<v Deepika>Good insight. Arjun, can you draft a feature spec for real-time editing by end of month?
+
+00:00:14.200 --> 00:00:18.800
+<v Arjun>Absolutely. I'll have it ready by August 31st. I'll include technical feasibility notes too.
+
+00:00:19.000 --> 00:00:23.500
+<v Meera>On the design side, we need to finalize the new onboarding flow. User testing showed confusion at step 3.
+
+00:00:24.000 --> 00:00:28.300
+<v Deepika>Meera, please redesign step 3 and run another usability test by next Wednesday.
+
+00:00:28.500 --> 00:00:32.000
+<v Meera>Will do. I'll also update the design system documentation.
+
+00:00:32.500 --> 00:00:37.000
+<v Sanjay>Quick infrastructure update. We're migrating to Kubernetes next quarter. I need budget approval for the cluster.
+
+00:00:37.200 --> 00:00:41.500
+<v Deepika>I'll escalate the budget request to the VP by Friday. Sanjay, send me the cost breakdown today.
+
+00:00:42.000 --> 00:00:46.000
+<v Sanjay>Sure. One risk to flag — the migration could cause 2-4 hours of downtime during cutover.
+
+00:00:46.500 --> 00:00:50.000
+<v Deepika>That's a concern. Let's plan for a maintenance window. Sanjay, propose three weekend options.
+
+00:00:50.500 --> 00:00:54.000
+<v Arjun>Also, should we consider a feature freeze during the migration week?
+
+00:00:54.200 --> 00:00:58.000
+<v Deepika>Good idea. Let's decide that in next week's meeting. Everyone think about it.
+
+00:00:58.500 --> 00:01:02.000
+<v Deepika>Great discussion. Let's wrap up. Action items are clear. See you all next Thursday.

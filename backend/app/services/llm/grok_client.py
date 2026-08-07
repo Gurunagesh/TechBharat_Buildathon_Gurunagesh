@@ -40,6 +40,11 @@ class GrokClient:
         Raises:
             LLMExtractionError: If Grok API fails or key is missing.
         """
+        if settings.mock_llm:
+            from app.services.llm.gemini_client import GeminiClient
+            logger.info(f"[{LogEvent.LLM_FALLBACK}] MOCK MODE: Redirecting Grok extraction request to mock resolver...")
+            return GeminiClient._get_mock_extraction(transcript_text)
+
         if not settings.grok_api_key:
             raise LLMExtractionError(
                 message="GROK_API_KEY is not configured in environment.",

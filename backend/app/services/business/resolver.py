@@ -22,6 +22,9 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Type helper alias
+Tuple_Owner_Email = tuple[str, Optional[str]]
+
 
 class BusinessResolver:
     """Deterministic resolver for dates, owners, priorities, and confidence scores."""
@@ -138,6 +141,3 @@ class BusinessResolver:
         except (ValueError, TypeError):
             return 0.500
 
-
-# Type helper alias
-Tuple_Owner_Email = tuple[str, Optional[str]]

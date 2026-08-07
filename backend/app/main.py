@@ -37,8 +37,16 @@ async def lifespan(app: FastAPI):
 
     if check_db_connection():
         logger.info("[DB] Database connection: OK")
+        try:
+            from app.core.database import Base, engine
+            # Import models to ensure they register on Base.metadata
+            from app.models import models
+            Base.metadata.create_all(bind=engine)
+            logger.info("[DB] Schema tables verified/created successfully.")
+        except Exception as e:
+            logger.error(f"[DB] Error creating schema tables: {e}")
     else:
-        logger.warning("[DB] Database connection: FAILED — will retry on request")
+        logger.warning("[DB] Database connection: FAILED — schema tables not verified")
 
     if not settings.gemini_api_key:
         logger.warning("[CONFIG] GEMINI_API_KEY is not set!")

@@ -17,6 +17,7 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 
 from app.models.models import Meeting
+from app.models.enums import ProcessingStatus
 from app.core.exceptions import DuplicateTranscriptError
 from app.core.logging import get_logger, LogEvent
 
@@ -65,6 +66,18 @@ class DuplicateChecker:
         )
 
         if existing_meeting:
+            # If the previously matched meeting FAILED, do not treat it as a
+            # valid duplicate — allow the pipeline to reprocess and overwrite it.
+            if existing_meeting.processing_status == ProcessingStatus.FAILED:
+                logger.info(
+                    f"[{LogEvent.DUPLICATE_DETECTED}] Hash matched a FAILED meeting "
+                    f"({existing_meeting.meeting_id[:8]}...). Allowing reprocess."
+                )
+                # Delete the failed record so a fresh one can be created
+                db.delete(existing_meeting)
+                db.flush()
+                return transcript_hash, None
+
             logger.info(
                 f"[{LogEvent.DUPLICATE_DETECTED}] Idempotency hit: "
                 f"hash={transcript_hash[:12]}... matched existing meeting_id={existing_meeting.meeting_id}"

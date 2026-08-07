@@ -42,6 +42,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./tests:/app/tests
       - uploads_data:/app/uploads
     networks:
       - meeting_network

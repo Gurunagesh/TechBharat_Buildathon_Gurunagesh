@@ -1,13 +1,13 @@
 """
 main.py
 ───────
-FastAPI application entrypoint.
+FastAPI Application Entrypoint.
 
 Registers:
-- CORS middleware
-- All API routers
-- /api/health endpoint
-- Startup event (DB connection check)
+- Versioned API Routers (/api/v1/meetings, /api/v1/actions, /api/v1/meetings/{id}/sync, /api/v1/meetings/{id}/audit)
+- Global Exception Handlers (mapping domain errors to ResponseEnvelope.fail())
+- CORS Middleware
+- /api/health and /api/v1/health endpoints
 """
 
 from fastapi import FastAPI
@@ -17,15 +17,20 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.database import check_db_connection
+from app.api.exception_handlers import register_exception_handlers
+from app.api.meetings import router as meetings_router
+from app.api.actions import router as actions_router
+from app.api.sync import router as sync_router
+from app.api.audit import router as audit_router
+from app.schemas.common import ResponseEnvelope, HealthResponse
 
 logger = get_logger(__name__)
 
 
-# ── Lifespan (startup / shutdown) ────────────────────────────────
+# ── Lifespan Lifecycle ────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle events."""
-    # ── Startup ──────────────────────────────────────────────────
     logger.info("=" * 60)
     logger.info(f"  {settings.app_title} v{settings.app_version}")
     logger.info("=" * 60)
@@ -33,66 +38,72 @@ async def lifespan(app: FastAPI):
     if check_db_connection():
         logger.info("[DB] Database connection: OK")
     else:
-        logger.warning("[DB] Database connection: FAILED — will retry on first request")
+        logger.warning("[DB] Database connection: FAILED — will retry on request")
 
     if not settings.gemini_api_key:
         logger.warning("[CONFIG] GEMINI_API_KEY is not set!")
     if not settings.github_token:
-        logger.warning("[CONFIG] GITHUB_TOKEN is not set — GitHub sync will be disabled")
+        logger.warning("[CONFIG] GITHUB_TOKEN is not set — GitHub sync will use mock mode")
 
     yield
 
-    # ── Shutdown ─────────────────────────────────────────────────
     logger.info("Application shutting down.")
 
 
-# ── FastAPI App ───────────────────────────────────────────────────
+# ── FastAPI App Instance ──────────────────────────────────────────
 app = FastAPI(
     title=settings.app_title,
     version=settings.app_version,
     description=(
         "Agentic AI Meeting Assistant — TechBharat Cohort #2 Buildathon (Use Case B). "
-        "Extracts action items from meeting transcripts with human approval workflow."
+        "Extracts meeting intelligence with strict human-in-the-loop review before GitHub sync."
     ),
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
 )
 
+# ── Register Global Exception Handlers ────────────────────────────
+register_exception_handlers(app)
+
 # ── CORS Middleware ───────────────────────────────────────────────
-# Allows Streamlit (port 8501) to call FastAPI (port 8000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Restrict in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ── Include Versioned Routers (/api/v1/...) ──────────────────────
+app.include_router(meetings_router, prefix="/api")
+app.include_router(actions_router, prefix="/api")
+app.include_router(sync_router, prefix="/api")
+app.include_router(audit_router, prefix="/api")
 
-# ── Health Check ──────────────────────────────────────────────────
-@app.get("/api/health", tags=["System"])
+
+# ── Health Check Endpoints ────────────────────────────────────────
+@app.get(
+    "/api/health",
+    response_model=ResponseEnvelope[HealthResponse],
+    tags=["System"],
+    summary="Health Check",
+)
+@app.get(
+    "/api/v1/health",
+    response_model=ResponseEnvelope[HealthResponse],
+    tags=["System"],
+    summary="Health Check (v1)",
+)
 def health_check():
-    """
-    Health check endpoint.
-    Returns service status and database connectivity.
-    Used by Docker Compose healthcheck and monitoring.
-    """
+    """Returns service health status and database connectivity."""
     db_ok = check_db_connection()
-    return {
-        "status": "healthy" if db_ok else "degraded",
-        "version": settings.app_version,
-        "database": "connected" if db_ok else "unreachable",
-        "gemini_configured": bool(settings.gemini_api_key),
-        "github_configured": bool(settings.github_token),
-        "github_enabled": settings.enable_github,
-    }
-
-
-# ── Routers (added Sprint by Sprint) ─────────────────────────────
-# Sprint 6 will add:
-# from app.api import meetings, actions, sync, audit
-# app.include_router(meetings.router, prefix="/api", tags=["Meetings"])
-# app.include_router(actions.router, prefix="/api", tags=["Actions"])
-# app.include_router(sync.router, prefix="/api", tags=["Sync"])
-# app.include_router(audit.router, prefix="/api", tags=["Audit"])
+    health_data = HealthResponse(
+        status="healthy" if db_ok else "degraded",
+        version=settings.app_version,
+        database="connected" if db_ok else "unreachable",
+        gemini_configured=bool(settings.gemini_api_key),
+        github_configured=bool(settings.github_token),
+        github_enabled=settings.enable_github,
+    )
+    return ResponseEnvelope.ok(data=health_data, message="System health check.")

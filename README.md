@@ -68,7 +68,12 @@ MySQL DB (Port 3306)     Gemini 1.5 Flash
 - **Structured Logging & Telemetry**: JSON log formats with custom event types and execution timing.
 - **Retry & Fallback Strategy**: Configurable retry policies with automated model failover.
 
----
+-----
+[![Live Demo](https://img.shields.io/badge/Demo-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://agentic-ai-meeting-assistant.streamlit.app/)
+[![API Docs](https://img.shields.io/badge/API-FastAPI%20Docs-009688?style=for-the-badge&logo=fastapi)](https://meeting-assistant-backend-binn.onrender.com/docs)
+
+
+-----
 
 ## Buildathon Requirement Mapping
 

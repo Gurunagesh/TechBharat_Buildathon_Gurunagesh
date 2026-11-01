@@ -10,6 +10,7 @@ to consistent ResponseEnvelope.fail() JSON payloads with standard HTTP status co
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.exceptions import (
     MeetingAssistantError,
@@ -132,6 +133,19 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=envelope.model_dump(),
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
+        logger.error(f"[HTTP 503] Database error: {exc}")
+        envelope = ResponseEnvelope.fail(
+            error_code="ERR_DATABASE_UNAVAILABLE",
+            message="Database connection error. Please verify database connectivity.",
+            details={"error_detail": str(exc)},
+        )
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=envelope.model_dump(),
         )
 

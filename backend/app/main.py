@@ -90,6 +90,19 @@ app.include_router(sync_router, prefix="/api")
 app.include_router(audit_router, prefix="/api")
 
 
+# ── Root Welcome Endpoint ─────────────────────────────────────────
+@app.get("/", tags=["System"], summary="Root Endpoint")
+def root():
+    """Welcome endpoint providing service metadata and links."""
+    return {
+        "name": settings.app_title,
+        "version": settings.app_version,
+        "status": "online",
+        "docs": "/docs",
+        "health": "/api/v1/health",
+    }
+
+
 # ── Health Check Endpoints ────────────────────────────────────────
 @app.get(
     "/api/health",

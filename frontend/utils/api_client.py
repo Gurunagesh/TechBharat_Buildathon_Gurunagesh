@@ -11,7 +11,23 @@ import os
 import requests
 from typing import Dict, Any, List, Optional, Tuple
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+def _resolve_backend_url() -> str:
+    """Resolve backend URL from env vars or Streamlit Cloud st.secrets."""
+    env_url = os.getenv("BACKEND_URL")
+    if env_url:
+        return env_url.rstrip("/")
+
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "BACKEND_URL" in st.secrets:
+            return str(st.secrets["BACKEND_URL"]).rstrip("/")
+    except Exception:
+        pass
+
+    return "http://localhost:8000"
+
+
+BACKEND_URL = _resolve_backend_url()
 API_V1_URL = f"{BACKEND_URL}/api/v1"
 
 
@@ -22,7 +38,7 @@ class APIClient:
     def get_health() -> Dict[str, Any]:
         """Ping /api/v1/health endpoint."""
         try:
-            res = requests.get(f"{API_V1_URL}/health", timeout=4)
+            res = requests.get(f"{API_V1_URL}/health", timeout=12)
             if res.status_code == 200:
                 payload = res.json()
                 return payload.get("data", {"status": "degraded"})

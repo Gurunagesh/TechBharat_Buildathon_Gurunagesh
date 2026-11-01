@@ -21,9 +21,25 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# ── Connect Args (SSL for TiDB Cloud / Aiven) ─────────────────────
+connect_args = {}
+if settings.is_ssl_required:
+    ssl_args = {
+        "ssl_verify_cert": True,
+        "ssl_verify_identity": True,
+    }
+    try:
+        import certifi
+        ssl_args["ssl_ca"] = certifi.where()
+    except Exception as exc:
+        logger.warning(f"[DB] Could not load certifi CA bundle: {exc}")
+    connect_args.update(ssl_args)
+    logger.info(f"[DB] SSL/TLS enabled for cloud database ({settings.mysql_host}:{settings.mysql_port})")
+
 # ── Engine ────────────────────────────────────────────────────────
 engine = create_engine(
     settings.database_url,
+    connect_args=connect_args,
     pool_pre_ping=True,       # Reconnect automatically on stale connections
     pool_size=10,
     max_overflow=20,

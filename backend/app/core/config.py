@@ -9,7 +9,7 @@ NEVER hardcode values in any other module.
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -23,16 +23,30 @@ class Settings(BaseSettings):
     )
 
     # ── MySQL ─────────────────────────────────────────────────────
-    mysql_host: str = Field(default="db", description="MySQL host (Docker service name)")
+    mysql_host: str = Field(default="db", description="MySQL host (Docker service name or cloud host)")
     mysql_port: int = Field(default=3306)
     mysql_database: str = Field(default="meeting_assistant")
     mysql_user: str = Field(default="meeting_user")
     mysql_password: str = Field(default="meeting_password")
     mysql_root_password: str = Field(default="rootpassword")
+    mysql_ssl: bool = Field(default=False, description="Enable SSL for cloud MySQL (TiDB / Aiven / RDS)")
+    database_url_override: Optional[str] = Field(default=None, alias="database_url")
+
+    @property
+    def is_ssl_required(self) -> bool:
+        """Check if SSL should be activated for MySQL connection."""
+        if self.mysql_ssl:
+            return True
+        host_lower = (self.mysql_host or "").lower()
+        if "tidbcloud.com" in host_lower or "aivencloud.com" in host_lower or self.mysql_port == 4000:
+            return True
+        return False
 
     @property
     def database_url(self) -> str:
         """SQLAlchemy connection string."""
+        if self.database_url_override:
+            return self.database_url_override
         return (
             f"mysql+pymysql://{self.mysql_user}:{self.mysql_password}"
             f"@{self.mysql_host}:{self.mysql_port}/{self.mysql_database}"
